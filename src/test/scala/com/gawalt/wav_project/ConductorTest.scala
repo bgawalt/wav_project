@@ -7,10 +7,8 @@ import akka.testkit.TestActorRef
 /**
  * This source file created by Brian Gawalt, 11/24/16.
  * It is subject to the MIT license bundled with this package in the file LICENSE.txt.
- * Copyright (c) Brian Gawalt, 2015
+ * Copyright (c) Brian Gawalt, 2016
  */
-
-
 
 class ConductorTest extends FunSuite with Matchers {
 
