@@ -1,4 +1,4 @@
-.swp
+*.swp
 *.wav
 .DS_Store
 .idea/
