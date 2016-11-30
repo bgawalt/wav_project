@@ -7,6 +7,15 @@ import akka.actor.{ActorSystem, Props}
  * It is subject to the MIT license bundled with this package in the file LICENSE.txt.
  * Copyright (c) Brian Gawalt, 2016
  */
+
+/**
+ * args(0): Target audio (long) WAV filename
+ * args(1): Basis audio (short) WAV filename
+ * args(2): Base name for output WAV files
+ *
+ * Produces files named `basename_1.wav`, `basename_1.wav`, `basename_2.wav`, `basename_4.wav`, ...
+ * until you tell it to stop, or until the target audio's been just about entirely reconstructed.
+ */
 object WavProject {
 
   def main(args: Array[String]) {
