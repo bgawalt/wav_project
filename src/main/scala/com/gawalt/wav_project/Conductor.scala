@@ -6,7 +6,7 @@ import scala.collection.mutable
 case object BasisFitRequest
 case object StartMsg
 case object FinishMsg
-case class ResidualSnippetMsg(residual: List[Double])
+case class ResidualSnippetMsg(residual: Array[Double])
 case class ResultMsg(approximation: Vector[Double], updateNum: Int, lastUpdate: Boolean)
 
 /**
@@ -115,7 +115,7 @@ class Conductor(val target: Vector[Double],
     else {
       // Tell each impacted worker about the new residual.
       for (i <- impactedWorkers(idx)) {
-        val slice = residual.slice(i, i + basisLength).toList
+        val slice = residual.slice(i, i + basisLength)
         fitters(i) ! ResidualSnippetMsg(slice)
       }
       // Request basis fits from all workers.
@@ -126,7 +126,7 @@ class Conductor(val target: Vector[Double],
   def receive = {
     case StartMsg =>
       for (i <- 0 until numBases) {
-        val slice = residual.slice(i, i + basisLength).toList
+        val slice = residual.slice(i, i + basisLength)
         fitters(i) ! ResidualSnippetMsg(slice)
       }
       requestUpdates()

@@ -149,6 +149,11 @@ the already-parallelized Step (1) anyway.)
 I could also try reimplenting this all in Numpy instead.
 I just really enjoy writing in Scala, though.
 
+## Changelog
+
+* Dec 1: Moved dot-product calculation in `BasisFitter` to a `while` loop
+* Nov 28: First version up and running. Two minutes per iteration.
+
 [comment]: # (First run went slow:)
 
 [comment]: # (1 update: 9:52 PM)

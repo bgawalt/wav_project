@@ -15,14 +15,20 @@ class BasisFitter(val id: Int,
 
   var scaleFactor: Double = 0.0
   var varianceReduction: Double = Double.NaN
+  val n = basis.length
 
   val basisSumSquared: Double = basis.map(bi => bi*bi).sum
 
   def receive = {
     case ResidualSnippetMsg(residual) =>
-      require(residual.length == basis.length,
+      require(residual.length == n,
         s"residual length (${residual.length}) does not match basis length (${basis.length})")
-      val dot = residual.zip(basis).map({case (ri, bi) => ri*bi}).sum
+      var dot = 0.0
+      var i = 0
+      while (i  < n) {
+        dot += residual(i)*basis(i)
+        i += 1
+      }
       scaleFactor = dot/basisSumSquared
       varianceReduction = dot*dot/basisSumSquared
 
