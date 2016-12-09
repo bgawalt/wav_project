@@ -126,11 +126,6 @@ with lazy evaluation of the vector projection, it might save
 some time.  And the approximation would probably approach
 the target audio at roughly the same speed.
 
-I should definitely try replacing the functional
-`map`-then-`sum` pattern I currently use in the vector projection
-of Step (1) with a `while` loop.  I heard Scala runs faster
-that way.
-
 In general, there's almost certainly a way I can cut
 down on having to make new copies of `resid` snippets
 all the time.  It'd break the nice little "shared nothing"
@@ -149,10 +144,35 @@ the already-parallelized Step (1) anyway.)
 I could also try reimplenting this all in Numpy instead.
 I just really enjoy writing in Scala, though.
 
+## Related Work
+
+https://www.youtube.com/watch?v=t-7mQhSZRgM
+
 ## Changelog
 
-* Dec 1: Moved dot-product calculation in `BasisFitter` to a `while` loop
-* Nov 28: First version up and running. Two minutes per iteration.
+### Dec 1
+
+Moved dot-product calculation in `BasisFitter` to a `while` loop.
+Started passing residual snippets as arrays instead of lists.
+(This fixed a goof-up where I was checking `.length` on a
+`List`, which is expensive.)
+
+[comment]: # (Second run)
+
+[comment]: # (1 update: 10:01 PM)
+[comment]: # (2 updates: 10:01 PM)
+[comment]: # (4 updates: 10:01 PM)
+[comment]: # (8 updates: 10:02 PM)
+[comment]: # (16 updates: 10:02 PM)
+[comment]: # (32 updates: 10:04 PM)
+[comment]: # (64 updates: 10:06 PM)
+[comment]: # (128 updates: 10:12 PM)
+[comment]: # (256 updates: 10:23 PM)
+[comment]: # (512 updates: 10:46 PM)
+[comment]: # (1024 updates: 11:29 PM)
+
+### Nov 28
+
 
 [comment]: # (First run went slow:)
 
