@@ -27,8 +27,6 @@ object DemoWavProject {
   def main(args: Array[String]) {
     val basis  = Vector(1.0, 2.0, 3.0, 4.0)
     val target = Vector(1.0, 2.0, 3.0, 3.0, -2.0, -1.0, 0.0, 6.0, 8.0)
-    //val target = Vector(1.0, 2.0, 3.0, 4.0, -2.0, -4.0, -6.0, -8.0)
-    //val target = Vector(2.0, 5.0, 3.0, -3.0)
 
     implicit val system = ActorSystem("demo-wav-project")
 

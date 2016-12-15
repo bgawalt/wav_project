@@ -13,26 +13,40 @@ class BasisFitter(val id: Int,
                   val boss: ActorRef,
                   val basis: Vector[Double]) extends Actor {
 
+  val n = basis.length
+  // We'll overwrite this as messages arrive
+  val residual: Array[Double] = Array.fill[Double](n)(0.0)
+
   var scaleFactor: Double = 0.0
   var varianceReduction: Double = Double.NaN
-  val n = basis.length
+  var fitYet = false
+
 
   val basisSumSquared: Double = basis.map(bi => bi*bi).sum
 
   def receive = {
-    case ResidualSnippetMsg(residual) =>
-      require(residual.length == n,
-        s"residual length (${residual.length}) does not match basis length (${basis.length})")
-      var dot = 0.0
+    case ResidualSnippetMsg(newResid) =>
+      require(newResid.length == n,
+        s"residual length (${newResid.length}) does not match basis length (${basis.length})")
       var i = 0
-      while (i  < n) {
-        dot += residual(i)*basis(i)
+      while (i < n) {
+        residual(i) = newResid(i)
         i += 1
       }
-      scaleFactor = dot/basisSumSquared
-      varianceReduction = dot*dot/basisSumSquared
+      fitYet = false
 
     case BasisFitRequest =>
+      if (!fitYet) {
+        var dot = 0.0
+        var i = 0
+        while (i  < n) {
+          dot += residual(i)*basis(i)
+          i += 1
+        }
+        scaleFactor = dot/basisSumSquared
+        varianceReduction = dot*dot/basisSumSquared
+        fitYet = true
+      }
       boss ! FitBasisMsg(id = id,
                          varianceReduction = varianceReduction,
                          scale = scaleFactor)
