@@ -135,11 +135,13 @@ class Conductor(val target: Vector[Double],
 
   def receive = {
     case StartMsg =>
+      println(s"Polling $numFittersToPoll, $pollAllFitters")
       for (i <- 0 until numBases) {
         val slice = residual.slice(i, i + basisLength)
         fitters(i) ! ResidualSnippetMsg(slice)
       }
       requestUpdates()
+      println("Done with start msg")
     case FitBasisMsg(id, varReduced, scale) =>
       handleFitterReply(id = id, varReduction = varReduced, scale = scale)
     case FinishMsg =>

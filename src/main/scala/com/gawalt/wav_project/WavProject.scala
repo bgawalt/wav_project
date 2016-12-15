@@ -1,6 +1,7 @@
 package com.gawalt.wav_project
 
 import akka.actor.{ActorSystem, Props}
+import scala.util.Try
 
 /**
  * This source file created by Brian Gawalt, 11/27/16.
@@ -19,12 +20,13 @@ import akka.actor.{ActorSystem, Props}
 object WavProject {
 
   def main(args: Array[String]) {
-    val target_filename = args(0)
-    val basis_filename = args(1)
-    val outfile_base = args(2)
+    val targetFilename = args(0)
+    val basisFilename = args(1)
+    val outfileBase = args(2)
+    val numFitters = Try(args(3).toInt).toOption
 
-    val target = WavUtil.readFile(target_filename)
-    val basis = WavUtil.readFile(basis_filename)
+    val target = WavUtil.readFile(targetFilename)
+    val basis = WavUtil.readFile(basisFilename)
 
     println("TARGET STATS")
     WavUtil.printStats(target)
@@ -34,12 +36,13 @@ object WavProject {
 
     implicit val system = ActorSystem("wav-project")
 
-    val publisher = system.actorOf(Props(new Publisher(outfile_base)), "publisher")
+    val publisher = system.actorOf(Props(new Publisher(outfileBase)), "publisher")
     val conductor = system.actorOf(Props(
       new Conductor(target = target,
         basis = basis,
         publisher = publisher,
-        checkpointBase = 1
+        checkpointBase = 1,
+        numFittersToPoll = numFitters
       )), "conductor")
     conductor ! StartMsg
   }
