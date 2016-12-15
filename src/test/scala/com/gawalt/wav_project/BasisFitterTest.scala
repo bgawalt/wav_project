@@ -41,24 +41,31 @@ class BasisFitterTest extends FunSuite with Matchers {
     val bfRef = TestActorRef(new BasisFitter(1, bossRef, basis))
     val bf = bfRef.underlyingActor
     bfRef ! ResidualSnippetMsg(Array(2.0, 4.0, 6.0, 8.0))
+    bf.varianceReduction.isNaN should be (true)
+    bf.scaleFactor should be (0.0)
+    bfRef ! BasisFitRequest
     bf.scaleFactor should be (2.0 +- 1e-6)
     bf.varianceReduction should be (120.0 +- 1e-6)
 
     bfRef ! ResidualSnippetMsg(Array(-1.5, -3.0, -4.5, -6.0))
+    bfRef ! BasisFitRequest
     bf.scaleFactor should be (-1.5 +- 1e-6)
     bf.varianceReduction should be (67.5 +- 1e-6)
 
 
     bfRef ! ResidualSnippetMsg(Array(1.0, 1.0, 1.0, 1.0))
+    bfRef ! BasisFitRequest
     bf.scaleFactor should be (0.33333333333 +- 1e-6)
     bf.varianceReduction should be (3.3333333 +- 1e-6)
 
     // Check out repeated residual reduction.
     val original = Array(3.0, 4.0, 9.0, 2.0)
     bfRef ! ResidualSnippetMsg(original)
+    bfRef ! BasisFitRequest
     bf.scaleFactor should be (1.5333333333333334 +- 1e-6)
     val updated = original.zip(basis).map({case (oi, bi) => oi - 1.5333333333333334*bi})
     bfRef ! ResidualSnippetMsg(updated)
+    bfRef ! BasisFitRequest
     bf.scaleFactor should be (0.0 +- 1e-6)
   }
 
