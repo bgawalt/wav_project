@@ -150,6 +150,13 @@ https://www.youtube.com/watch?v=t-7mQhSZRgM
 
 ## Changelog
 
+### Dec 14
+
+Implemented "laziness" in the routine: moved the dot product
+calculations back to the moment of a BasisFitRequest, and
+enabled the Conductor to request only a subsample of basis
+fitters for each step.
+
 ### Dec 1
 
 Moved dot-product calculation in `BasisFitter` to a `while` loop.
