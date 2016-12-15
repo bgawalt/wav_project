@@ -59,7 +59,6 @@ class BasisFitterTest extends FunSuite with Matchers {
     bf.scaleFactor should be (1.5333333333333334 +- 1e-6)
     val updated = original.zip(basis).map({case (oi, bi) => oi - 1.5333333333333334*bi})
     bfRef ! ResidualSnippetMsg(updated)
-    println(updated.mkString("<", ",", ">"))
     bf.scaleFactor should be (0.0 +- 1e-6)
   }
 
