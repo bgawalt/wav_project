@@ -2,6 +2,7 @@ package com.gawalt.wav_project
 
 import akka.actor.{Props, ActorRef, Actor}
 import scala.collection.mutable
+import scala.util.Random
 
 case object BasisFitRequest
 case object StartMsg
@@ -33,9 +34,13 @@ class Conductor(val target: Vector[Double],
                 val maxUpdates: Int = -1,
                 val tolerance: Double = 1e-6,
                 val checkpointBase: Int = -1,
-                val checkpointMultiplier: Int = 2) extends Actor {
+                val checkpointMultiplier: Int = 2,
+                val numFittersToPoll: Option[Int] = None,
+                val seed: Int = 0) extends Actor {
   val targetLength: Int = target.length
   val basisLength: Int = basis.length
+  val pollAllFitters = numFittersToPoll.isEmpty
+  val rng = new Random(seed)
 
   val residual:  Array[Double] = target.toArray
   val approx: Array[Double] = Array.fill[Double](targetLength)(0.0)
@@ -72,8 +77,13 @@ class Conductor(val target: Vector[Double],
   def requestUpdates() {
     require(outstandingRequests.isEmpty,
       "requestUpdates invoked with non-empty outstandingRequests")
-    (0 until numBases).foreach(outstandingRequests.add)
-    fitters.foreach(_ ! BasisFitRequest)
+    val fittersToPoll = if (pollAllFitters) {
+      0 until numBases
+    } else {
+      (0 until numFittersToPoll.get).map(_ => rng.nextInt(numBases)).distinct
+    }
+    fittersToPoll.foreach(i => {outstandingRequests.add(i); fitters(i) ! BasisFitRequest})
+    //fitters.foreach(_ ! BasisFitRequest)
     maxReduction = Double.NegativeInfinity
     maxWorker = -1
     maxScale = Double.NaN

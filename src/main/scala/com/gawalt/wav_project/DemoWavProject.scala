@@ -35,8 +35,9 @@ object DemoWavProject {
       new Conductor(target = target,
                     basis = basis,
                     publisher = publisher,
-                    maxUpdates = 10,
-                    checkpointBase = 1
+                    maxUpdates = 20,
+                    checkpointBase = 1,
+      numFittersToPoll = Some(2)
       )), "conductor")
     conductor ! StartMsg
   }
