@@ -6,5 +6,5 @@ package com.gawalt.wav_project
  * Copyright (c) Brian Gawalt, 2016
  */
 object GlobalResidual {
-  val residual: Array[Double] = Array.empty[Double]
+  var residual: Array[Double] = Array.empty[Double]
 }

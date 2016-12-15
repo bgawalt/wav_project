@@ -4,10 +4,10 @@ import akka.actor.{Props, ActorRef, Actor}
 import scala.collection.mutable
 import scala.util.Random
 
+case object ResidualUpdated
 case object BasisFitRequest
 case object StartMsg
 case object FinishMsg
-case class ResidualSnippetMsg(residual: Array[Double])
 case class ResultMsg(approximation: Vector[Double], updateNum: Int, lastUpdate: Boolean)
 
 /**
@@ -42,9 +42,8 @@ class Conductor(val target: Vector[Double],
   val pollAllFitters = numFittersToPoll.isEmpty
   val rng = new Random(seed)
 
-  val residual:  Array[Double] = target.toArray
   val approx: Array[Double] = Array.fill[Double](targetLength)(0.0)
-  var residAbsSum: Double = residual.map(_.abs).sum
+  var residAbsSum: Double = Double.NaN
 
   val numBases: Int = targetLength - basisLength + 1 // a.k.a, num workers
   // Current scale contribution of basis(i):
@@ -83,7 +82,6 @@ class Conductor(val target: Vector[Double],
       (0 until numFittersToPoll.get).map(_ => rng.nextInt(numBases)).distinct
     }
     fittersToPoll.foreach(i => {outstandingRequests.add(i); fitters(i) ! BasisFitRequest})
-    //fitters.foreach(_ ! BasisFitRequest)
     maxReduction = Double.NegativeInfinity
     maxWorker = -1
     maxScale = Double.NaN
@@ -108,10 +106,10 @@ class Conductor(val target: Vector[Double],
   def applyUpdate(idx: Int, scale: Double) {
     require(!scale.isNaN, "scale must not be NaN")
     for (i <- 0 until basisLength) {
-      residAbsSum -= residual(idx + i).abs
+      residAbsSum -= GlobalResidual.residual(idx + i).abs
       approx(idx + i) += scale*basis(i)
-      residual(idx + i) = target(idx + i) - approx(idx + i)
-      residAbsSum += residual(idx + i).abs
+      GlobalResidual.residual(idx + i) = target(idx + i) - approx(idx + i)
+      residAbsSum += GlobalResidual.residual(idx + i).abs
     }
     currentScale(idx) = scale
     numUpdates += 1
@@ -125,8 +123,7 @@ class Conductor(val target: Vector[Double],
     else {
       // Tell each impacted worker about the new residual.
       for (i <- impactedWorkers(idx)) {
-        val slice = residual.slice(i, i + basisLength)
-        fitters(i) ! ResidualSnippetMsg(slice)
+        fitters(i) ! ResidualUpdated
       }
       // Request basis fits from all workers.
       requestUpdates()
@@ -135,13 +132,13 @@ class Conductor(val target: Vector[Double],
 
   def receive = {
     case StartMsg =>
-      println(s"Polling $numFittersToPoll, $pollAllFitters")
+      GlobalResidual.residual = Array.fill[Double](target.length)(0.0)
+      target.copyToArray(GlobalResidual.residual)
+      residAbsSum = GlobalResidual.residual.map(_.abs).sum
       for (i <- 0 until numBases) {
-        val slice = residual.slice(i, i + basisLength)
-        fitters(i) ! ResidualSnippetMsg(slice)
+        fitters(i) ! ResidualUpdated
       }
       requestUpdates()
-      println("Done with start msg")
     case FitBasisMsg(id, varReduced, scale) =>
       handleFitterReply(id = id, varReduction = varReduced, scale = scale)
     case FinishMsg =>
