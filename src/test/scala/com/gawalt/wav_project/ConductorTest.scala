@@ -47,12 +47,9 @@ class ConductorTest extends FunSuite with Matchers {
     val conRef = TestActorRef(
       new Conductor(target = target, basis = basis, publisher = pubRef, checkpointBase = 1))
     val con = conRef.underlyingActor
+    // guess i should do this some day
 
     conRef ! StartMsg
-
-
-
-
   }
 
 
