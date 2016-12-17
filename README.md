@@ -157,6 +157,42 @@ calculations back to the moment of a BasisFitRequest, and
 enabled the Conductor to request only a subsample of basis
 fitters for each step.
 
+To accomodate this, had to push the residual into a global
+variable.  Otherwise, basis fitters would need to keep a
+local copy of their snippet of the residual, which means
+a quadratic blowup in the number of samples being stored.
+(Maybe this could've been fixed with using `List`s instead
+of `Array`s for the residual and its snippets, but that seems
+slow computationally and this is working fine, if inelegantly.)
+
+Now that residual updates are lazy, we can also use sampling
+instead of a full census.  That's where the real speed-up comes
+in.  There doesn't appear to be a huge impact to quality,
+at least to my ear.  Two thousand updates per minute is a lot.
+
+[comment]: # (1 update: 9:02 AM)
+[comment]: # (2 updates: 9:02 AM)
+[comment]: # (4 updates: 9:02 AM)
+[comment]: # (8 updates: 9:02 AM)
+[comment]: # (16 updates: 9:02 AM)
+[comment]: # (32 updates: 9:02 AM)
+[comment]: # (64 updates: 9:02 AM)
+[comment]: # (128 updates: 9:02 AM)
+[comment]: # (256 updates: 9:02 AM)
+[comment]: # (512 updates: 9:02 AM)
+[comment]: # (1024 updates: 9:03 AM)
+[comment]: # (2048 updates: 9:03 AM)
+[comment]: # (4096 updates: 9:04 AM)
+[comment]: # (8192 updates: 9:06 AM)
+[comment]: # (16384 updates: 9:23 AM; laptop fell asleep)
+[comment]: # (32768 updates: 9:32 AM)
+[comment]: # (65536 updates: 9:47 AM)
+[comment]: # (131072 updates: 10:15 AM)
+[comment]: # (262144 updates: 11:12 AM)
+[comment]: # (524288 updates: 1:05 PM)
+[comment]: # (1048576 updates: 4:49 PM)
+
+
 ### Dec 1
 
 Moved dot-product calculation in `BasisFitter` to a `while` loop.

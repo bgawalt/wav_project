@@ -97,8 +97,6 @@ class Conductor(val target: Vector[Double],
       maxScale = scale
     }
     if (outstandingRequests.isEmpty) {
-      println(
-        s"Applying update $numUpdates: worker $maxWorker\treduction $maxReduction\tscale $maxScale")
       applyUpdate(maxWorker, maxScale)
     }
   }
