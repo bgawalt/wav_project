@@ -5,6 +5,12 @@ package com.gawalt.wav_project
  * It is subject to the MIT license bundled with this package in the file LICENSE.txt.
  * Copyright (c) Brian Gawalt, 2016
  */
+
+/*
+  args(0) Input audo
+  args(1) Clip remainder
+  args(2) Output audio
+ */
 object WavTrim {
 
   def main(args: Array[String]) {

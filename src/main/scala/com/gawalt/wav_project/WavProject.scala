@@ -39,7 +39,7 @@ object WavProject {
     val publisher = system.actorOf(Props(new Publisher(outfileBase)), "publisher")
     val conductor = system.actorOf(Props(
       new Conductor(target = target,
-        basis = basis,
+        bases = Vector(basis),
         publisher = publisher,
         checkpointBase = 1,
         numFittersToPoll = numFitters

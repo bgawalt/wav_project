@@ -33,7 +33,7 @@ object DemoWavProject {
     val publisher = system.actorOf(Props[DummyPublisher])
     val conductor = system.actorOf(Props(
       new Conductor(target = target,
-                    basis = basis,
+                    bases = Vector(basis),
                     publisher = publisher,
                     maxUpdates = 20,
                     checkpointBase = 1,

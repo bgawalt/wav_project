@@ -150,6 +150,31 @@ https://www.youtube.com/watch?v=t-7mQhSZRgM
 
 ## Changelog
 
+### Dec 25
+
+Moved to a multi-basis system, instead of all workers fitting
+the same basis.  Tried out a new example soundwave pair at
+first:
+
+[comment]: # (1 update: 10:05 PM)
+[comment]: # (2 updates: 10:05 PM)
+[comment]: # (4 updates: 10:05 PM)
+[comment]: # (8 updates: 10:05 PM)
+[comment]: # (16 updates: 10:05 PM)
+[comment]: # (32 updates: 10:05 PM)
+[comment]: # (64 updates: 10:05 AM)
+[comment]: # (128 updates: 10:05 AM)
+[comment]: # (256 updates: 10:06 AM)
+[comment]: # (512 updates: 10:07 AM)
+[comment]: # (1024 updates: 10:09 AM)
+[comment]: # (2048 updates: 10:13 PM)
+[comment]: # (4096 updates: 10:20 PM)
+[comment]: # (8192 updates: 10:34 PM)
+[comment]: # (16384 updates: 11:01 PM)
+[comment]: # (32768 updates: 11:54 PM)
+[comment]: # (65536 updates: 1:41 AM)
+[comment]: # (131072 updates: 5:16 AM)
+
 ### Dec 14
 
 Implemented "laziness" in the routine: moved the dot product

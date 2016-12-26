@@ -19,7 +19,7 @@ case class ResultMsg(approximation: Vector[Double], updateNum: Int, lastUpdate: 
 /**
  * Actor that coordinates the fitting of scaled, shifted bases to the target signal.
  * @param target Long signal to be approximated
- * @param basis Short basis whose scaled and shifted versions will approximate target
+ * @param bases Short basis functions whose scaled and shifted versions will approximate target
  * @param publisher Actor to handle the resulting approximation
  * @param maxUpdates If num. of update steps exceeds this value, send results to publisher and quit
  * @param tolerance If absolute error is below this value, send results to publisher and quit
@@ -29,7 +29,7 @@ case class ResultMsg(approximation: Vector[Double], updateNum: Int, lastUpdate: 
  *                             next checkpoint.
  */
 class Conductor(val target: Vector[Double],
-                val basis: Vector[Double],
+                val bases: Vector[Vector[Double]],
                 val publisher: ActorRef,
                 val maxUpdates: Int = -1,
                 val tolerance: Double = 1e-6,
@@ -38,78 +38,76 @@ class Conductor(val target: Vector[Double],
                 val numFittersToPoll: Option[Int] = None,
                 val seed: Int = 0) extends Actor {
   val targetLength: Int = target.length
-  val basisLength: Int = basis.length
+
   val pollAllFitters = numFittersToPoll.isEmpty
   val rng = new Random(seed)
 
   val approx: Array[Double] = Array.fill[Double](targetLength)(0.0)
   var residAbsSum: Double = Double.NaN
 
-  val numBases: Int = targetLength - basisLength + 1 // a.k.a, num workers
-  // Current scale contribution of basis(i):
-  val currentScale: Array[Double] = Array.fill[Double](numBases)(0.0)
-  val fitters = (0 until numBases).map(id =>
-      context.actorOf(Props(classOf[BasisFitter], id, self, basis)))
+  val fitters = (0 until bases.length).flatMap(basisId => {
+    val basis = bases(basisId)
+    (0 until targetLength - basis.length + 1).map(pos =>
+      context.actorOf(Props(classOf[BasisFitter], basisId, pos, self, basis)))
+  })
+  val numFitters = fitters.length
 
   // How many coordinate descent steps have we taken?
   var numUpdates: Int = 0
   var checkpoint: Int = checkpointBase
 
   // Which workers have not yet replied to their BasisFitRequest with a FitBasisMsg?
-  val outstandingRequests: mutable.HashSet[Int] = new mutable.HashSet()
+  //val outstandingRequests: mutable.HashSet[(Int, Int)] = new mutable.HashSet()
+  var numOutstandingRequests = 0
   // What's the smallest variance seen in a worker's reply?
   // What was that worker's ID?  What was that worker's associated basis scale?
   var maxReduction: Double = Double.NegativeInfinity
-  var maxWorker: Int = -1
+  var maxBasis: Int = -1
+  var maxPos: Int = -1
   var maxScale: Double = Double.NaN
-
-  def impactedWorkers(idx: Int): Seq[Int] = {
-    val naiveMin = idx - basisLength + 1
-    val min = if (naiveMin >= 0) naiveMin else 0
-    val naiveMax = idx + basisLength - 1
-    val max = if (naiveMax < numBases) naiveMax else numBases - 1
-    min to max
-  }
 
   def done: Boolean = (numUpdates == maxUpdates) || (residAbsSum/targetLength < tolerance)
 
   def requestUpdates() {
-    require(outstandingRequests.isEmpty,
+    require(numOutstandingRequests == 0,
       "requestUpdates invoked with non-empty outstandingRequests")
     val fittersToPoll = if (pollAllFitters) {
-      0 until numBases
+      0 until numFitters
     } else {
-      (0 until numFittersToPoll.get).map(_ => rng.nextInt(numBases)).distinct
+      (0 until numFittersToPoll.get).map(_ => rng.nextInt(numFitters)).distinct
     }
-    fittersToPoll.foreach(i => {outstandingRequests.add(i); fitters(i) ! BasisFitRequest})
+    fittersToPoll.foreach(i => {numOutstandingRequests += 1; fitters(i) ! BasisFitRequest})
     maxReduction = Double.NegativeInfinity
-    maxWorker = -1
+    maxBasis = -1
+    maxPos = -1
     maxScale = Double.NaN
   }
 
-  def handleFitterReply(id: Int, varReduction: Double, scale: Double) {
-    require(outstandingRequests.contains(id),
-      s"Received fitter reply from $id, but that id was not in outstandingRequests")
-    outstandingRequests.remove(id)
+  def handleFitterReply(basisId: Int, pos: Int, varReduction: Double, scale: Double) {
+    require(numOutstandingRequests > 0,
+      s"Received fitter reply from $basisId, $pos, but " +
+        s"numOutstandingRequest = $numOutstandingRequests")
+    numOutstandingRequests -= 1
     if (varReduction > maxReduction) {
       maxReduction = varReduction
-      maxWorker = id
+      maxBasis = basisId
+      maxPos = pos
       maxScale = scale
     }
-    if (outstandingRequests.isEmpty) {
-      applyUpdate(maxWorker, maxScale)
+    if (numOutstandingRequests == 0) {
+      applyUpdate(basisId = maxBasis, pos = maxPos, scale = maxScale)
     }
   }
 
-  def applyUpdate(idx: Int, scale: Double) {
+  def applyUpdate(basisId: Int, pos: Int, scale: Double) {
     require(!scale.isNaN, "scale must not be NaN")
-    for (i <- 0 until basisLength) {
-      residAbsSum -= GlobalResidual.residual(idx + i).abs
-      approx(idx + i) += scale*basis(i)
-      GlobalResidual.residual(idx + i) = target(idx + i) - approx(idx + i)
-      residAbsSum += GlobalResidual.residual(idx + i).abs
+    val basis = bases(basisId)
+    for (i <- 0 until basis.length) {
+      residAbsSum -= GlobalResidual.residual(pos + i).abs
+      approx(pos + i) += scale*basis(i)
+      GlobalResidual.residual(pos + i) = target(pos + i) - approx(pos + i)
+      residAbsSum += GlobalResidual.residual(pos + i).abs
     }
-    currentScale(idx) = scale
     numUpdates += 1
     if (numUpdates == checkpoint) {
       checkpoint *= checkpointMultiplier
@@ -120,9 +118,8 @@ class Conductor(val target: Vector[Double],
     }
     else {
       // Tell each impacted worker about the new residual.
-      for (i <- impactedWorkers(idx)) {
-        fitters(i) ! ResidualUpdated
-      }
+      // TODO: Only alert the relevant subset of fitters.
+      fitters.foreach(f => f ! ResidualUpdated)
       // Request basis fits from all workers.
       requestUpdates()
     }
@@ -133,12 +130,10 @@ class Conductor(val target: Vector[Double],
       GlobalResidual.residual = Array.fill[Double](target.length)(0.0)
       target.copyToArray(GlobalResidual.residual)
       residAbsSum = GlobalResidual.residual.map(_.abs).sum
-      for (i <- 0 until numBases) {
-        fitters(i) ! ResidualUpdated
-      }
+      fitters.foreach(f => f ! ResidualUpdated)
       requestUpdates()
-    case FitBasisMsg(id, varReduced, scale) =>
-      handleFitterReply(id = id, varReduction = varReduced, scale = scale)
+    case FitBasisMsg(basisId, pos, varReduced, scale) =>
+      handleFitterReply(basisId = basisId, pos = pos, varReduction = varReduced, scale = scale)
     case FinishMsg =>
       publisher ! ResultMsg(approx.toVector, numUpdates, lastUpdate = true)
   }
